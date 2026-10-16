@@ -31,6 +31,6 @@ describe('client API wrapper', () => {
 
   it('explains network failures in plain English', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new TypeError('fetch failed'))));
-    await expect(createApi().start()).rejects.toMatchObject({ status: 0, message: expect.stringMatching(/couldn’t reach the server/) });
+    await expect(createApi().start()).rejects.toMatchObject({ status: 0, message: expect.stringMatching(/Can’t connect/) });
   });
 });

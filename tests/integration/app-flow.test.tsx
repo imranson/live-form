@@ -47,8 +47,8 @@ describe('resident journey (React UI ↔ Express API ↔ AI agent)', () => {
 
       if (n === 1) {
         // Gamification feedback after the first answer
-        expect(await screen.findByText('Badge unlocked: First Step')).toBeInTheDocument();
-        await waitFor(() => expect(screen.getByText('Leading')).toBeInTheDocument());
+        expect(await screen.findByText('New badge: First Step')).toBeInTheDocument();
+        await waitFor(() => expect(screen.getByText('Top')).toBeInTheDocument());
         expect(screen.getByTestId('xp')).toHaveTextContent('100 XP');
       }
     }
@@ -56,8 +56,10 @@ describe('resident journey (React UI ↔ Express API ↔ AI agent)', () => {
     // Results: AI narrative + curated signposts
     expect(await screen.findByRole('heading', { level: 1, name: AI_NARRATIVE.headline }, { timeout: 5_000 })).toBeInTheDocument();
     expect(screen.getByText(/Trailblazer/)).toBeInTheDocument();
-    expect(screen.getAllByRole('heading', { level: 3 }).length).toBeGreaterThanOrEqual(3 + 3);
-    expect(screen.getByRole('link', { name: /Visit Jobs, careers and skills/ })).toHaveAttribute('href', 'https://www.wigan.gov.uk/Resident/Jobs-Careers/index.aspx');
+    await user.click(screen.getByRole('tab', { name: 'Jobs' }));
+    expect(screen.getAllByRole('heading', { level: 3 })).toHaveLength(3);
+    await user.click(screen.getByRole('tab', { name: 'Help' }));
+    expect(screen.getByRole('link', { name: /^Jobs, careers and skills/ })).toHaveAttribute('href', 'https://www.wigan.gov.uk/Resident/Jobs-Careers/index.aspx');
 
     await user.click(screen.getByRole('button', { name: /start again/i }));
     expect(screen.getByRole('heading', { level: 1, name: 'Find your future in Wigan' })).toBeInTheDocument();
@@ -68,7 +70,7 @@ describe('resident journey (React UI ↔ Express API ↔ AI agent)', () => {
     render(<App api={createApi('http://127.0.0.1:9')} />);
     await user.click(screen.getByRole('button', { name: /let’s go/i }));
     const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent(/couldn’t reach the server/);
+    expect(alert).toHaveTextContent(/Can’t connect/);
     expect(within(alert).getByRole('button', { name: /try again/i })).toBeInTheDocument();
   });
 

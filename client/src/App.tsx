@@ -123,7 +123,7 @@ export function App({ api = defaultApi }: { api?: Api }) {
 
         {phase === 'error' && error && (
           <section className="card error" role="alert">
-            <h2>Sorry – that didn’t work</h2>
+            <h2>Something went wrong</h2>
             <p>{error.message}</p>
             <div className="error__actions">
               {error.canRetry && (

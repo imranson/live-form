@@ -20,9 +20,22 @@ describe('ResultView', () => {
     expect(within(screen.getByRole('list', { name: 'Badges earned' })).getByText(/Wigan Pathfinder/)).toBeInTheDocument();
   });
 
+  it('splits the results into tabs, one panel at a time', async () => {
+    render(<ResultView result={await makeResult()} onRestart={() => undefined} />);
+    expect(screen.getByRole('tab', { name: 'You' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getAllByRole('tabpanel')).toHaveLength(1);
+    await userEvent.click(screen.getByRole('tab', { name: 'Jobs' }));
+    expect(screen.getByRole('tab', { name: 'Jobs' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tabpanel')).toHaveAccessibleName('Jobs');
+    await userEvent.keyboard('{ArrowRight}');
+    expect(screen.getByRole('tab', { name: 'Next steps' })).toHaveFocus();
+    expect(screen.getByRole('tabpanel')).toHaveAccessibleName('Next steps');
+  });
+
   it('shows the top three sector matches with example roles and evidence sources', async () => {
     render(<ResultView result={await makeResult()} onRestart={() => undefined} />);
-    const matches = screen.getByRole('heading', { name: /top Wigan matches/ }).parentElement!;
+    await userEvent.click(screen.getByRole('tab', { name: 'Jobs' }));
+    const matches = screen.getByRole('heading', { name: /top job matches/ }).parentElement!;
     const cards = within(matches).getAllByRole('heading', { level: 3 });
     expect(cards).toHaveLength(3);
     expect(cards[0]).toHaveTextContent('Engineering & Manufacturing');
@@ -32,8 +45,9 @@ describe('ResultView', () => {
   it('signposts to real services with safe external links, reasons and phone numbers', async () => {
     const result = await makeResult();
     render(<ResultView result={result} onRestart={() => undefined} />);
+    await userEvent.click(screen.getByRole('tab', { name: 'Help' }));
     for (const { resource } of result.signposts) {
-      const link = screen.getByRole('link', { name: new RegExp(`Visit ${resource.title.replace(/[?()]/g, '\\$&')}`) });
+      const link = screen.getByRole('link', { name: new RegExp(`^${resource.title.replace(/[?()]/g, '\\$&')}`) });
       expect(link).toHaveAttribute('href', resource.url);
       expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     }

@@ -55,28 +55,15 @@ export function QuestionCard({ question, onSubmit }: Props) {
 
   return (
     <section className="card question" aria-labelledby={`${question.id}-title`}>
-      <div className="agent-note">
-        <span className="agent-note__avatar" aria-hidden="true">
-          🧭
-        </span>
-        <div>
-          <p className="agent-note__who">
-            Your Wigan careers guide
-            <span className={`source source--${question.source}`}>{question.source === 'ai' ? '✨ Written live by AI' : '📋 From our question bank'}</span>
-          </p>
-          <p className="agent-note__text">{question.agentNote}</p>
-        </div>
-      </div>
+      <p className="agent-note">
+        <span aria-hidden="true">🧭</span> {question.agentNote}{' '}
+        <span className={`source source--${question.source}`}>{question.source === 'ai' ? '✨ Written by AI' : '📋 Standard question'}</span>
+      </p>
 
       <h2 id={`${question.id}-title`} className="question__title" tabIndex={-1} ref={headingRef}>
         {question.title}
       </h2>
       {question.helper && <p className="question__helper">{question.helper}</p>}
-      {multi && (
-        <p className="question__multi" aria-live="polite">
-          Pick up to {question.maxSelections} · <strong>{selected.length}</strong> picked
-        </p>
-      )}
 
       <div className="options" role="group" aria-labelledby={`${question.id}-title`}>
         {question.options.map((o, i) => {
@@ -109,6 +96,9 @@ export function QuestionCard({ question, onSubmit }: Props) {
 
       {multi && (
         <div className="question__actions">
+          <p className="question__multi" aria-live="polite">
+            <strong>{selected.length}</strong> of {question.maxSelections} picked
+          </p>
           <button type="button" className="btn btn--primary" disabled={selected.length === 0 || submitted} onClick={() => submit(selected)}>
             Continue <span aria-hidden="true">→</span>
           </button>

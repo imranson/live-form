@@ -13,7 +13,7 @@ describe('QuestionCard – single choice', () => {
   it('shows the AI guide’s note, the question and one button per option', () => {
     render(<QuestionCard question={single} onSubmit={() => undefined} />);
     expect(screen.getByText(single.agentNote)).toBeInTheDocument();
-    expect(screen.getByText(/Written live by AI/)).toBeInTheDocument();
+    expect(screen.getByText(/Written by AI/)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: single.title })).toHaveFocus();
     expect(screen.getAllByRole('button')).toHaveLength(single.options.length);
   });
@@ -48,7 +48,7 @@ describe('QuestionCard – multi choice', () => {
   it('toggles options with aria-pressed and submits on Continue', async () => {
     const onSubmit = vi.fn();
     render(<QuestionCard question={multi} onSubmit={onSubmit} />);
-    expect(screen.getByText(/From our question bank/)).toBeInTheDocument();
+    expect(screen.getByText(/Standard question/)).toBeInTheDocument();
     const continueBtn = screen.getByRole('button', { name: /continue/i });
     expect(continueBtn).toBeDisabled();
 
@@ -58,7 +58,7 @@ describe('QuestionCard – multi choice', () => {
     await userEvent.click(screen.getByRole('button', { name: /cooking/i }));
     await userEvent.click(building);
     expect(building).toHaveAttribute('aria-pressed', 'false');
-    expect(screen.getByText(/picked/)).toHaveTextContent('Pick up to 3 · 1 picked');
+    expect(screen.getByText(/picked/)).toHaveTextContent('1 of 3 picked');
 
     await userEvent.click(continueBtn);
     expect(onSubmit).toHaveBeenCalledWith([multi.options[5].id]);

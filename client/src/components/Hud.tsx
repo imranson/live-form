@@ -9,20 +9,18 @@ export function Hud({ progress, current, xpGain }: { progress: Progress; current
   const pct = levelProgress(progress.level, progress.xp);
   return (
     <div className="hud" aria-label="Your progress">
-      <div className="hud__steps">
-        <p className="hud__count">
-          Question <strong>{Math.min(current, progress.target)}</strong> of {progress.target}
-        </p>
-        <ol className="steps" aria-hidden="true">
-          {Array.from({ length: progress.target }, (_, i) => (
-            <li key={i} className={i < progress.answered ? 'step step--done' : i === progress.answered ? 'step step--current' : 'step'} />
-          ))}
-        </ol>
-      </div>
+      <p className="hud__count">
+        Question <strong>{Math.min(current, progress.target)}</strong> of {progress.target}
+      </p>
+      <ol className="steps" aria-hidden="true">
+        {Array.from({ length: progress.target }, (_, i) => (
+          <li key={i} className={i < progress.answered ? 'step step--done' : i === progress.answered ? 'step step--current' : 'step'} />
+        ))}
+      </ol>
 
       <div className="hud__level">
-        <span className="level-pill" title={`Level ${progress.level.number}`}>
-          Lv {progress.level.number} · {progress.level.name}
+        <span className="level-pill" title={progress.level.name}>
+          Level {progress.level.number}
         </span>
         <div
           className="xpbar"

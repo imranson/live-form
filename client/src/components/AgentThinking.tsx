@@ -3,9 +3,9 @@ import { useEffect, useState } from 'react';
 export type ThinkingKind = 'start' | 'next' | 'result';
 
 const STEPS: Record<ThinkingKind, string[]> = {
-  start: ['Warming up your careers guide…', 'Looking at Wigan’s most in-demand jobs…', 'Writing your first question…'],
-  next: ['Reading your answer…', 'Updating your job matches…', 'Writing your next question…'],
-  result: ['Adding up your matches…', 'Finding local support for you…', 'Writing your personal results…'],
+  start: ['Getting ready…', 'Checking local jobs…', 'Writing your first question…'],
+  next: ['Saving your answer…', 'Updating your matches…', 'Writing the next question…'],
+  result: ['Adding up your answers…', 'Finding help near you…', 'Writing your results…'],
 };
 
 export function AgentThinking({ kind }: { kind: ThinkingKind }) {

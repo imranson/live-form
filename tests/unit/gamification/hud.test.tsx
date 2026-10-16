@@ -15,7 +15,7 @@ describe('HUD', () => {
   it('shows question count, level and XP', () => {
     render(<Hud progress={progress} current={4} />);
     expect(screen.getByText(/Question/)).toHaveTextContent('Question 4 of 8');
-    expect(screen.getByText(/Lv 2 · Navigator/)).toBeInTheDocument();
+    expect(screen.getByText('Level 2')).toHaveAttribute('title', 'Navigator');
     expect(screen.getByTestId('xp')).toHaveTextContent('325 XP');
   });
 
@@ -43,14 +43,14 @@ describe('MatchMeter', () => {
     render(<MatchMeter scores={computeScores(answers)} answered={1} />);
     expect(screen.getAllByRole('listitem')).toHaveLength(7);
     const digital = screen.getByTestId('meter-digital');
-    expect(within(digital).getByText('Leading')).toBeInTheDocument();
+    expect(within(digital).getByText('Top')).toBeInTheDocument();
     expect(digital).toHaveTextContent('100%');
   });
 
   it('invites the person to answer before any matches exist', () => {
     render(<MatchMeter scores={computeScores([])} answered={0} />);
-    expect(screen.getByText(/Answer a question to light this up/)).toBeInTheDocument();
-    expect(screen.queryByText('Leading')).not.toBeInTheDocument();
+    expect(screen.getByText(/Answer to see them/)).toBeInTheDocument();
+    expect(screen.queryByText('Top')).not.toBeInTheDocument();
   });
 });
 
@@ -59,7 +59,7 @@ describe('BadgeToasts', () => {
     render(<BadgeToasts badges={[BADGES.firstStep, BADGES.halfway]} />);
     const region = screen.getByRole('status');
     expect(region).toHaveAttribute('aria-live', 'polite');
-    expect(region).toHaveTextContent('Badge unlocked: First Step');
-    expect(region).toHaveTextContent('Badge unlocked: Halfway Hero');
+    expect(region).toHaveTextContent('New badge: First Step');
+    expect(region).toHaveTextContent('New badge: Halfway Hero');
   });
 });

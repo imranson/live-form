@@ -22,10 +22,7 @@ export function Header() {
 export function Footer() {
   return (
     <footer className="site-footer">
-      <p>
-        A Wigan Council prototype. We don’t ask for your name or contact details, and your answers are deleted after an hour.
-        Questions and summaries are written by AI; links come from a fixed list of trusted local and national services.
-      </p>
+      <p>We don’t ask for your name. Answers are deleted after 1 hour. Questions are written by AI; links go to trusted services.</p>
     </footer>
   );
 }

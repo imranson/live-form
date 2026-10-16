@@ -9,7 +9,7 @@ export function BadgeToasts({ badges }: { badges: readonly Badge[] }) {
             {b.emoji}
           </span>
           <div>
-            <p className="toast__title">Badge unlocked: {b.name}</p>
+            <p className="toast__title">New badge: {b.name}</p>
             <p className="toast__desc">{b.description}</p>
           </div>
         </div>

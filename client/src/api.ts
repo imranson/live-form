@@ -22,7 +22,7 @@ export function createApi(base = ''): Api {
     try {
       res = await fetch(`${base}${path}`, { ...init, headers: { 'Content-Type': 'application/json', ...init?.headers } });
     } catch {
-      throw new ApiError(0, 'We couldn’t reach the server. Check your connection and try again.');
+      throw new ApiError(0, 'Can’t connect. Check your internet and try again.');
     }
     const body = (await res.json().catch(() => ({}))) as { error?: string };
     if (!res.ok) throw new ApiError(res.status, body.error ?? 'Something went wrong. Please try again.');
