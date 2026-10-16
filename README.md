@@ -14,6 +14,7 @@ npm run dev                 # API on :8787, UI on http://localhost:5173
 
 Production build: `npm run build && npm start`, which serves the UI and the API from http://localhost:8787.
 Without internet or an API key: `AI_MODE=offline npm run dev` runs the same flow from the built-in question bank.
+Vercel: `vercel.json` serves `dist/client` as static files and rewrites `/api/*` to the Express app in `api/index.ts`. Set `OLLAMA_API_KEY` in the project's environment variables. Sessions are held in memory, so a request that lands on a different function instance gets a "session expired" error. Use a shared store before real traffic.
 
 ## How it works
 
