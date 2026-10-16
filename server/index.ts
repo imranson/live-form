@@ -16,6 +16,7 @@ try {
 
 const config = readConfig();
 const llm = config.aiMode === 'ollama' ? new OllamaClient(config.ollama) : null;
+if (llm && !config.ollama.apiKey) console.warn('OLLAMA_API_KEY is not set: ollama.com will reject requests and every question will come from the fallback bank.');
 const store = new SessionStore(config.sessionTtlMs);
 setInterval(() => store.prune(), 60_000).unref();
 
@@ -24,7 +25,7 @@ const app = createApp({
   resultAgent: new ResultAgent(llm),
   store,
   questionCount: config.questionCount,
-  aiInfo: { mode: llm ? (config.ollama.apiKey ? 'ollama-cloud-direct' : 'ollama-local-gateway') : 'offline', models: llm ? config.ollama.models : [] },
+  aiInfo: { mode: llm ? 'ollama-cloud' : 'offline', models: llm ? config.ollama.models : [] },
 });
 
 // In production, serve the built client from the same origin.

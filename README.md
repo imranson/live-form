@@ -8,18 +8,17 @@ An interactive, gamified careers questionnaire for **Wigan Council**. An AI agen
 
 ```bash
 npm install
-cp .env.example .env        # defaults: kimi-k2.6:cloud, falling back to gemma4:31b-cloud
-ollama signin               # once, so the local Ollama app can reach cloud models
+cp .env.example .env        # add OLLAMA_API_KEY (https://ollama.com/settings/keys); defaults: kimi-k2.6, falling back to gemma4:31b
 npm run dev                 # API on :8787, UI on http://localhost:5173
 ```
 
 Production build: `npm run build && npm start`, which serves the UI and the API from http://localhost:8787.
-Without internet or Ollama: `AI_MODE=offline npm run dev` runs the same flow from the built-in question bank.
+Without internet or an API key: `AI_MODE=offline npm run dev` runs the same flow from the built-in question bank.
 
 ## How it works
 
 ```
-client/ (React + Vite)  ──►  server/ (Express API)  ──►  Ollama /api/chat (cloud models)
+client/ (React + Vite)  ──►  server/ (Express API)  ──►  ollama.com /api/chat (cloud models)
                                   │
                                   ├─ agent/planner.ts       which topics are still allowed (guarantees coverage)
                                   ├─ agent/questionAgent.ts prompt → JSON → validate → Question (or fallback bank)
@@ -42,7 +41,7 @@ Health & Social Care · Construction & Green Trades · Engineering & Manufacturi
 npm test                  # unit + integration (no network needed)
 npm run test:unit
 npm run test:integration
-npm run test:live         # real Ollama cloud calls (needs `ollama signin` or OLLAMA_API_KEY)
+npm run test:live         # real Ollama cloud calls (needs OLLAMA_API_KEY)
 ```
 
 | Feature | Unit tests (`tests/unit/…`) | Integration tests (`tests/integration/…`) |

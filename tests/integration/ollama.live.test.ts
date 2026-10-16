@@ -6,7 +6,7 @@ import { ResultAgent } from '../../server/agent/resultAgent.js';
 import { buildProgress } from '../../shared/game.js';
 import type { AnswerRecord } from '../../shared/types.js';
 
-// Hits the real Ollama cloud models. Run with `npm run test:live` (needs `ollama signin` or OLLAMA_API_KEY).
+// Hits the real Ollama cloud models. Run with `npm run test:live` (needs OLLAMA_API_KEY).
 describe.skipIf(!process.env.OLLAMA_LIVE)('live Ollama cloud models', () => {
   try {
     process.loadEnvFile();

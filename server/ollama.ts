@@ -28,8 +28,7 @@ export class LlmError extends Error {
 type FetchLike = (url: string, init: RequestInit) => Promise<Response>;
 
 /**
- * Talks to Ollama's /api/chat – either a local Ollama app (which proxies "*:cloud" models)
- * or ollama.com directly with an API key. Tries each configured model in turn until one
+ * Talks to ollama.com's /api/chat with an API key. Tries each configured model in turn until one
  * returns output that parses *and* passes the caller's validation.
  */
 export class OllamaClient implements LlmClient {

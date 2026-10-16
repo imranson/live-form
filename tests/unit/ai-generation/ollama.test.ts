@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { LlmError, OllamaClient } from '../../../server/ollama.js';
 
 const reply = (content: string, status = 200) => new Response(JSON.stringify({ message: { role: 'assistant', content } }), { status });
-const config = { host: 'http://ollama.test', models: ['primary:cloud', 'backup:cloud'], timeoutMs: 5_000 };
+const config = { host: 'http://ollama.test', models: ['primary', 'backup'], timeoutMs: 5_000 };
 const messages = [{ role: 'user' as const, content: 'hi' }];
 const parseOk = (d: unknown) => d as { ok: boolean };
 
@@ -12,11 +12,11 @@ describe('OllamaClient', () => {
     const client = new OllamaClient(config, fetchFn);
     const result = await client.generateJson(messages, parseOk, { temperature: 0.3 });
 
-    expect(result).toEqual({ value: { ok: true }, model: 'primary:cloud' });
+    expect(result).toEqual({ value: { ok: true }, model: 'primary' });
     const [url, init] = fetchFn.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe('http://ollama.test/api/chat');
     expect(JSON.parse(init.body as string)).toEqual({
-      model: 'primary:cloud',
+      model: 'primary',
       messages,
       stream: false,
       format: 'json',
@@ -27,7 +27,7 @@ describe('OllamaClient', () => {
     expect(init.signal).toBeInstanceOf(AbortSignal);
   });
 
-  it('sends a bearer token when talking to ollama.com directly', async () => {
+  it('sends the API key as a bearer token', async () => {
     const fetchFn = vi.fn(async () => reply('{"ok":true}'));
     await new OllamaClient({ ...config, apiKey: 'k3y' }, fetchFn).generateJson(messages, parseOk);
     const init = (fetchFn.mock.calls[0] as unknown as [string, RequestInit])[1];
@@ -42,8 +42,8 @@ describe('OllamaClient', () => {
   it('falls back to the next model on HTTP errors', async () => {
     const fetchFn = vi.fn().mockResolvedValueOnce(new Response('overloaded', { status: 503 })).mockResolvedValueOnce(reply('{"ok":true}'));
     const result = await new OllamaClient(config, fetchFn).generateJson(messages, parseOk);
-    expect(result.model).toBe('backup:cloud');
-    expect(JSON.parse((fetchFn.mock.calls[1][1] as RequestInit).body as string).model).toBe('backup:cloud');
+    expect(result.model).toBe('backup');
+    expect(JSON.parse((fetchFn.mock.calls[1][1] as RequestInit).body as string).model).toBe('backup');
   });
 
   it('falls back to the next model when output fails validation', async () => {
@@ -52,7 +52,7 @@ describe('OllamaClient', () => {
       if ((d as { ok: unknown }).ok !== true) throw new Error('invalid');
       return d;
     };
-    expect((await new OllamaClient(config, fetchFn).generateJson(messages, strict)).model).toBe('backup:cloud');
+    expect((await new OllamaClient(config, fetchFn).generateJson(messages, strict)).model).toBe('backup');
   });
 
   it('retries without the think flag when a model rejects it', async () => {
@@ -61,7 +61,7 @@ describe('OllamaClient', () => {
       .mockResolvedValueOnce(new Response('{"error":"model does not support thinking"}', { status: 400 }))
       .mockResolvedValueOnce(reply('{"ok":true}'));
     const result = await new OllamaClient(config, fetchFn).generateJson(messages, parseOk);
-    expect(result.model).toBe('primary:cloud');
+    expect(result.model).toBe('primary');
     expect(JSON.parse((fetchFn.mock.calls[1][1] as RequestInit).body as string)).not.toHaveProperty('think');
   });
 
@@ -70,8 +70,8 @@ describe('OllamaClient', () => {
     const err = await new OllamaClient(config, fetchFn).generateJson(messages, parseOk).catch((e) => e);
     expect(err).toBeInstanceOf(LlmError);
     expect(err.attempts).toEqual([
-      { model: 'primary:cloud', error: 'Empty response from model' },
-      { model: 'backup:cloud', error: 'network down' },
+      { model: 'primary', error: 'Empty response from model' },
+      { model: 'backup', error: 'network down' },
     ]);
   });
 

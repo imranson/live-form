@@ -6,7 +6,7 @@ import type { AnswerResponse, Question, SessionResult, StartResponse } from '../
 import { aiQuestionFor, buildTestApp, silentLogger, topicFromPrompt } from '../helpers.js';
 
 const ollamaReply = (content: string) => new Response(JSON.stringify({ message: { role: 'assistant', content } }), { status: 200 });
-const config = { host: 'http://ollama.test', models: ['kimi-k2.6:cloud', 'gemma4:31b-cloud'], timeoutMs: 5_000 };
+const config = { host: 'http://ollama.test', models: ['kimi-k2.6', 'gemma4:31b'], timeoutMs: 5_000 };
 
 async function complete(app: Parameters<typeof request>[0]) {
   const http = request(app);
@@ -37,12 +37,12 @@ describe('Ollama client + agents working together', () => {
   it('switches to the fallback cloud model when the primary returns junk', async () => {
     const fetchFn = vi.fn(async (_url: string, init: RequestInit) => {
       const body = JSON.parse(init.body as string);
-      if (body.model === 'kimi-k2.6:cloud') return ollamaReply('{"topic":"interests","options":[]}');
+      if (body.model === 'kimi-k2.6') return ollamaReply('{"topic":"interests","options":[]}');
       return ollamaReply(JSON.stringify(aiQuestionFor(topicFromPrompt(body.messages))));
     });
     const q = await new QuestionAgent(new OllamaClient(config, fetchFn), silentLogger).next([], 8);
     expect(q.source).toBe('ai');
-    expect(fetchFn.mock.calls.map(([, init]) => JSON.parse(init.body as string).model)).toEqual(['kimi-k2.6:cloud', 'gemma4:31b-cloud']);
+    expect(fetchFn.mock.calls.map(([, init]) => JSON.parse(init.body as string).model)).toEqual(['kimi-k2.6', 'gemma4:31b']);
   });
 });
 
@@ -69,7 +69,7 @@ describe('resilience: a resident is never left stuck', () => {
       if (system.includes('personalised results')) return ollamaReply('not json at all');
       return ollamaReply(JSON.stringify(aiQuestionFor(topicFromPrompt(body.messages))));
     });
-    const { app } = buildTestApp(new OllamaClient({ ...config, models: ['only:cloud'] }, fetchFn));
+    const { app } = buildTestApp(new OllamaClient({ ...config, models: ['only'] }, fetchFn));
     const { asked, result } = await complete(app);
     const sources = new Set(asked.map((q) => q.source));
     expect(sources).toEqual(new Set(['ai', 'fallback']));
