@@ -169,4 +169,33 @@ export interface AnswerResponse {
   progress: Progress;
 }
 
+/** A language the server has recognised. `code` is a canonical BCP 47 tag; `name` is its English name. */
+export interface Language {
+  code: string;
+  name: string;
+  nativeName: string;
+  dir: 'ltr' | 'rtl';
+}
+
+export interface TranslationResponse {
+  language: Language;
+  messages: Record<string, string>;
+  /** False when some strings couldn't be translated and are still in English. */
+  complete: boolean;
+}
+
+/** Whatever the resident typed: letters, spaces and a little punctuation only, so it can't carry instructions. */
+export const translateBodySchema = z.object({
+  language: z
+    .string()
+    .trim()
+    .min(1)
+    .max(40)
+    .regex(/^[\p{L}\p{M}][\p{L}\p{M} '’()\-,.]*$/u, 'Type the name of a language using letters only'),
+});
+
+export const startBodySchema = z.object({
+  language: z.string().max(35).optional(),
+});
+
 export { SECTOR_IDS };

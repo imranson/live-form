@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Question } from '../../../shared/types.js';
+import { useI18n } from '../i18n';
 
 interface Props {
   question: Question;
@@ -8,6 +9,7 @@ interface Props {
 
 /** Remount per question (key={question.id}) so selection state resets cleanly. */
 export function QuestionCard({ question, onSubmit }: Props) {
+  const { t, rich } = useI18n();
   const [selected, setSelected] = useState<string[]>([]);
   const [submitted, setSubmitted] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -57,7 +59,7 @@ export function QuestionCard({ question, onSubmit }: Props) {
     <section className="card question" aria-labelledby={`${question.id}-title`}>
       <p className="agent-note">
         <span aria-hidden="true">🧭</span> {question.agentNote}{' '}
-        <span className={`source source--${question.source}`}>{question.source === 'ai' ? '✨ Written by AI' : '📋 Standard question'}</span>
+        <span className={`source source--${question.source}`}>{question.source === 'ai' ? `✨ ${t('question.ai')}` : `📋 ${t('question.standard')}`}</span>
       </p>
 
       <h2 id={`${question.id}-title`} className="question__title" tabIndex={-1} ref={headingRef}>
@@ -97,10 +99,10 @@ export function QuestionCard({ question, onSubmit }: Props) {
       {multi && (
         <div className="question__actions">
           <p className="question__multi" aria-live="polite">
-            <strong>{selected.length}</strong> of {question.maxSelections} picked
+            {rich('question.picked', { count: <strong>{selected.length}</strong>, max: question.maxSelections })}
           </p>
           <button type="button" className="btn btn--primary" disabled={selected.length === 0 || submitted} onClick={() => submit(selected)}>
-            Continue <span aria-hidden="true">→</span>
+            {t('question.continue')} <span className="arrow" aria-hidden="true">→</span>
           </button>
         </div>
       )}

@@ -12,7 +12,7 @@ describe('SessionStore', () => {
     expect(a.id).toMatch(/^[0-9a-f-]{36}$/);
     expect(a.id).not.toBe(b.id);
     expect(store.get(a.id)).toBe(a);
-    expect(Object.keys(a).sort()).toEqual(['answers', 'busy', 'createdAt', 'id', 'pending', 'progress', 'target', 'updatedAt']);
+    expect(Object.keys(a).sort()).toEqual(['answers', 'busy', 'createdAt', 'id', 'language', 'pending', 'progress', 'target', 'updatedAt']);
   });
 
   it('expires sessions after the TTL of inactivity', () => {

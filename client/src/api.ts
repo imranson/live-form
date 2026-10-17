@@ -1,4 +1,4 @@
-import type { AnswerResponse, SessionResult, StartResponse } from '../../shared/types.js';
+import type { AnswerResponse, SessionResult, StartResponse, TranslationResponse } from '../../shared/types.js';
 
 export class ApiError extends Error {
   constructor(
@@ -11,7 +11,9 @@ export class ApiError extends Error {
 }
 
 export interface Api {
-  start(): Promise<StartResponse>;
+  /** Anything the resident typed, e.g. "Polski" or "Urdu"; the server works out which language it is. */
+  translate(language: string): Promise<TranslationResponse>;
+  start(language?: string): Promise<StartResponse>;
   answer(sessionId: string, questionId: string, optionIds: string[]): Promise<AnswerResponse>;
   result(sessionId: string): Promise<SessionResult>;
 }
@@ -30,7 +32,8 @@ export function createApi(base = ''): Api {
   }
 
   return {
-    start: () => request<StartResponse>('/api/sessions', { method: 'POST' }),
+    translate: (language) => request<TranslationResponse>('/api/translations', { method: 'POST', body: JSON.stringify({ language }) }),
+    start: (language) => request<StartResponse>('/api/sessions', { method: 'POST', body: JSON.stringify(language ? { language } : {}) }),
     answer: (sessionId, questionId, optionIds) =>
       request<AnswerResponse>(`/api/sessions/${encodeURIComponent(sessionId)}/answers`, {
         method: 'POST',

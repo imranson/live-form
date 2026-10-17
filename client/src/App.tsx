@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Badge, Progress, Question, SessionResult } from '../../shared/types.js';
 import { ApiError, createApi, type Api } from './api';
+import { useI18n, type I18n } from './i18n';
 import { Footer, Header } from './components/Header';
 import { Intro } from './components/Intro';
 import { Hud } from './components/Hud';
@@ -15,14 +16,23 @@ type Phase = 'intro' | 'loading' | 'question' | 'result' | 'error';
 const defaultApi = createApi();
 const TOAST_MS = 4000;
 
+/** Server messages are English, so other languages get a translated message for the same situation. */
+function errorMessage(err: unknown, { t, english }: I18n): string {
+  if (err instanceof ApiError && err.status === 0) return t('error.offline');
+  if (err instanceof ApiError && err.status === 404) return t('error.expired');
+  return english && err instanceof Error ? err.message : t('error.generic');
+}
+
 export function App({ api = defaultApi }: { api?: Api }) {
+  const i18n = useI18n();
+  const { t, language, setTranslation } = i18n;
   const [phase, setPhase] = useState<Phase>('intro');
   const [thinking, setThinking] = useState<ThinkingKind>('start');
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [question, setQuestion] = useState<Question | null>(null);
   const [progress, setProgress] = useState<Progress | null>(null);
   const [result, setResult] = useState<SessionResult | null>(null);
-  const [error, setError] = useState<{ message: string; canRetry: boolean; retry: () => void } | null>(null);
+  const [error, setError] = useState<{ cause: unknown; canRetry: boolean; retry: () => void } | null>(null);
   const [toasts, setToasts] = useState<Badge[]>([]);
   const [xpGain, setXpGain] = useState<{ amount: number; key: number } | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -44,9 +54,8 @@ export function App({ api = defaultApi }: { api?: Api }) {
     try {
       await task();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Something went wrong.';
       const canRetry = !(err instanceof ApiError && err.status === 404);
-      setError({ message, canRetry, retry: () => void run(kind, task) });
+      setError({ cause: err, canRetry, retry: () => void run(kind, task) });
       setPhase('error');
     }
   }, []);
@@ -65,13 +74,15 @@ export function App({ api = defaultApi }: { api?: Api }) {
     setToasts([]);
     setXpGain(null);
     void run('start', async () => {
-      const res = await api.start();
+      const res = await api.start(language.code);
       setSessionId(res.sessionId);
       setQuestion(res.question);
       setProgress(res.progress);
       setPhase('question');
     });
-  }, [api, run]);
+  }, [api, language.code, run]);
+
+  const translate = useCallback(async (input: string) => setTranslation(await api.translate(input)), [api, setTranslation]);
 
   const answer = useCallback(
     (optionIds: string[]) => {
@@ -106,7 +117,7 @@ export function App({ api = defaultApi }: { api?: Api }) {
     <>
       <Header />
       <main className="page" id="main">
-        {phase === 'intro' && <Intro onStart={start} />}
+        {phase === 'intro' && <Intro onStart={start} onTranslate={translate} />}
 
         {inQuiz && progress && <Hud progress={progress} current={progress.answered + 1} xpGain={xpGain} />}
 
@@ -123,16 +134,16 @@ export function App({ api = defaultApi }: { api?: Api }) {
 
         {phase === 'error' && error && (
           <section className="card error" role="alert">
-            <h2>Something went wrong</h2>
-            <p>{error.message}</p>
+            <h2>{t('error.title')}</h2>
+            <p>{errorMessage(error.cause, i18n)}</p>
             <div className="error__actions">
               {error.canRetry && (
                 <button type="button" className="btn btn--primary" onClick={error.retry}>
-                  Try again
+                  {t('error.retry')}
                 </button>
               )}
               <button type="button" className="btn btn--secondary" onClick={restart}>
-                Start again
+                {t('common.startAgain')}
               </button>
             </div>
           </section>

@@ -4,6 +4,8 @@ import { NARRATIVE_SYSTEM_PROMPT } from '../server/agent/prompts.js';
 import { QuestionAgent } from '../server/agent/questionAgent.js';
 import { ResultAgent } from '../server/agent/resultAgent.js';
 import { createApp } from '../server/app.js';
+import { RESOLVER_SYSTEM_PROMPT } from '../server/i18n/language.js';
+import { TRANSLATE_SYSTEM_PROMPT, Translator } from '../server/i18n/translator.js';
 import { SessionStore } from '../server/sessions.js';
 import type { ChatMessage, LlmClient } from '../server/ollama.js';
 import { TOPIC_IDS, type TopicId } from '../shared/profile.js';
@@ -76,18 +78,34 @@ export const AI_NARRATIVE = {
   nextSteps: ['Look at Care to join us?', 'Talk to the National Careers Service', 'Browse Jobs, careers and skills'],
 };
 
-/** A fake model that behaves like a well-behaved real one: right topic, valid JSON. */
+/** What the fake translator does to every string: easy to spot, keeps {placeholders} intact. */
+export const fakeTranslate = (text: string) => `«${text}»`;
+
+/** Answers a translator prompt by wrapping every value with fakeTranslate. */
+export function translateFromPrompt(messages: ChatMessage[]): Record<string, string> {
+  const user = messages[1].content;
+  const payload = JSON.parse(user.slice(user.indexOf('\n\n') + 2)) as Record<string, string>;
+  return Object.fromEntries(Object.entries(payload).map(([key, text]) => [key, fakeTranslate(text)]));
+}
+
+/** A fake model that behaves like a well-behaved real one: right topic, valid JSON. Any unknown language name is Polish. */
 export function scriptedLlm(): FakeLlm {
-  return new FakeLlm((messages) =>
-    messages[0].content === NARRATIVE_SYSTEM_PROMPT ? AI_NARRATIVE : aiQuestionFor(topicFromPrompt(messages)),
-  );
+  return new FakeLlm((messages) => {
+    const system = messages[0].content;
+    if (system === NARRATIVE_SYSTEM_PROMPT) return AI_NARRATIVE;
+    if (system === TRANSLATE_SYSTEM_PROMPT) return translateFromPrompt(messages);
+    if (system === RESOLVER_SYSTEM_PROMPT) return { code: 'pl' };
+    return aiQuestionFor(topicFromPrompt(messages));
+  });
 }
 
 export function buildTestApp(llm: LlmClient | null, questionCount = 8) {
   const store = new SessionStore(60 * 60_000);
+  const translator = new Translator(llm, silentLogger);
   const app = createApp({
-    questionAgent: new QuestionAgent(llm, silentLogger),
-    resultAgent: new ResultAgent(llm, silentLogger),
+    questionAgent: new QuestionAgent(llm, silentLogger, translator),
+    resultAgent: new ResultAgent(llm, silentLogger, translator),
+    translator,
     store,
     questionCount,
     aiInfo: { mode: llm ? 'test' : 'offline', models: llm ? ['fake-model'] : [] },

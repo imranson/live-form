@@ -30,6 +30,7 @@ shared/  sectors · resources · scoring · signposting · gamification · zod s
 - **The AI generates the form live.** Each answer triggers a new `/api/chat` call. The agent receives the answers so far, the current sector matches, the profile tags and the topics it may still use, and returns one question as JSON. For every option it also returns sector `signals` (−2..3) and profile `tags`.
 - **Guardrails.** Model output is parsed even when it is wrapped in code fences, then checked with zod. Unknown sectors and tags are dropped, weights are clamped, and any question that uses a topic it wasn't allowed, or that doesn't separate sectors, is rejected. A rejected question makes the server try the fallback model next and then the hand-written question bank, so a resident never gets stuck. The planner makes sure the topics needed for signposting (situation, age, learning, support) are always asked.
 - **Signposting is deterministic.** `shared/signpost.ts` maps the top sectors and the profile tags to a curated, link-checked catalogue (`shared/resources.ts`). The AI writes only the summary text and cannot add links: narratives that contain URLs are rejected.
+- **Any language.** On the start screen a resident can type any language, in English or in its own words ("Polski", "اردو", "Brazilian Portuguese"). `server/i18n/language.ts` turns that into a BCP 47 code, instantly for about 190 known names and otherwise by asking the model, and rejects anything that isn't a real language. The typed text never reaches the question prompts: they only see the language's name as given by `Intl`. The model then writes every question and the results in that language. Fixed text (buttons, sector info, badges and signposts) is machine-translated from the English catalog in `shared/i18n.ts` and cached per language. The first resident to choose a new language waits about 15 seconds; after that it's instant. Translations that drop a `{placeholder}`, add a link or echo the English back are rejected, and that text stays in English. Right-to-left languages flip the layout. The page says the text was translated by AI and that links go to English websites.
 - **Privacy.** The app asks for no names, contact details or free text. Sessions are anonymous, held in memory, and expire after 60 minutes of inactivity.
 
 ## Focus sectors (Wigan's hardest-to-fill jobs)
@@ -54,12 +55,14 @@ npm run test:live         # real Ollama cloud calls (needs OLLAMA_API_KEY)
 | Focus on Wigan's under-filled jobs | `underfilled-jobs/sectors.test.ts`, `scoring.test.ts` | `api.test.ts` (sector catalogue, live match updates) |
 | Wigan branding | `branding/branding.test.tsx` | `app-flow.test.tsx` |
 | Anonymous sessions | `sessions/sessions.test.ts` | `api.test.ts` (validation, double-submit, expiry 404s) |
+| Any language | `i18n/language.test.ts` (typed names → codes, RTL, input limits), `i18n/translator.test.ts` (caching, chunking, rejecting bad output), `i18n/catalog.test.tsx` (language picker, RTL, saved choice) | `api.test.ts` (`/api/translations`, prompts and signposts in the session language, translated fallback questions), `app-flow.test.tsx` |
 
 ## API
 
 | Method | Path | Purpose |
 |---|---|---|
-| `POST` | `/api/sessions` | Start a session and get the first AI question |
+| `POST` | `/api/translations` | `{ language }` (anything typed) → the recognised language and the translated UI text |
+| `POST` | `/api/sessions` | `{ language? }` (a code from `/api/translations`) → start a session and get the first AI question |
 | `POST` | `/api/sessions/:id/answers` | `{ questionId, optionIds }` → next question + progress (XP, level, badges, scores) |
 | `GET` | `/api/sessions/:id/result` | Top matches, signposts and the narrative (generation starts as soon as the last answer arrives) |
 | `GET` | `/api/sectors` · `/api/health` | Sector catalogue · AI configuration |

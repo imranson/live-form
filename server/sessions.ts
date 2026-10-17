@@ -1,11 +1,13 @@
 import { randomUUID } from 'node:crypto';
-import type { AnswerRecord, Progress, Question, SessionResult } from '../shared/types.js';
+import { ENGLISH } from '../shared/i18n.js';
+import type { AnswerRecord, Language, Progress, Question, SessionResult } from '../shared/types.js';
 
 export interface Session {
   id: string;
   createdAt: number;
   updatedAt: number;
   target: number;
+  language: Language;
   answers: AnswerRecord[];
   pending: Question | null;
   progress: Progress;
@@ -23,14 +25,14 @@ export class SessionStore {
     private readonly now: () => number = Date.now,
   ) {}
 
-  create(target: number, progress: Progress): Session {
+  create(target: number, progress: Progress, language: Language = ENGLISH): Session {
     this.prune();
     if (this.sessions.size >= this.maxSessions) {
       const oldest = this.sessions.keys().next().value;
       if (oldest) this.sessions.delete(oldest);
     }
     const t = this.now();
-    const session: Session = { id: randomUUID(), createdAt: t, updatedAt: t, target, answers: [], pending: null, progress, busy: false };
+    const session: Session = { id: randomUUID(), createdAt: t, updatedAt: t, target, language, answers: [], pending: null, progress, busy: false };
     this.sessions.set(session.id, session);
     return session;
   }

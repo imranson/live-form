@@ -1,7 +1,9 @@
 import { collectTags, computeScores } from '../../shared/scoring.js';
-import { llmQuestionSchema, type AnswerRecord, type LlmQuestion, type Question } from '../../shared/types.js';
+import { ENGLISH, isEnglish } from '../../shared/i18n.js';
+import { llmQuestionSchema, type AnswerRecord, type Language, type LlmQuestion, type Question } from '../../shared/types.js';
 import type { TopicId } from '../../shared/profile.js';
 import type { LlmClient } from '../ollama.js';
+import { Translator } from '../i18n/translator.js';
 import { FALLBACK_QUESTIONS } from './fallbackBank.js';
 import { allowedTopics } from './planner.js';
 import { buildQuestionMessages } from './prompts.js';
@@ -43,13 +45,29 @@ export function toQuestion(q: LlmQuestion, number: number, source: Question['sou
   };
 }
 
+/** Translates a hand-written bank question; anything the translator can't handle stays in English. */
+export async function localizeQuestion(q: LlmQuestion, language: Language, translator: Pick<Translator, 'translate'>): Promise<LlmQuestion> {
+  if (isEnglish(language)) return q;
+  const entries: Record<string, string> = { title: q.title, agentNote: q.agentNote, ...(q.helper ? { helper: q.helper } : {}) };
+  q.options.forEach((o, i) => (entries[`option${i}`] = o.label));
+  const { messages } = await translator.translate(entries, language);
+  return {
+    ...q,
+    title: messages.title,
+    agentNote: messages.agentNote,
+    ...(q.helper ? { helper: messages.helper } : {}),
+    options: q.options.map((o, i) => ({ ...o, label: messages[`option${i}`] })),
+  };
+}
+
 export class QuestionAgent {
   constructor(
     private readonly llm: LlmClient | null,
     private readonly logger: Logger = console,
+    private readonly translator: Pick<Translator, 'translate'> = new Translator(llm, logger),
   ) {}
 
-  async next(answers: readonly AnswerRecord[], target: number): Promise<Question> {
+  async next(answers: readonly AnswerRecord[], target: number, language: Language = ENGLISH): Promise<Question> {
     const number = answers.length + 1;
     const allowed = allowedTopics(
       answers.map((a) => a.question.topic),
@@ -57,7 +75,7 @@ export class QuestionAgent {
     );
 
     if (this.llm) {
-      const messages = buildQuestionMessages({ answers, target, allowed, scores: computeScores(answers), tags: collectTags(answers) });
+      const messages = buildQuestionMessages({ answers, target, allowed, scores: computeScores(answers), tags: collectTags(answers), language });
       try {
         const { value } = await this.llm.generateJson(messages, (data) => parseAgentQuestion(data, allowed), { temperature: 0.8 });
         return toQuestion(value, number, 'ai');
@@ -66,6 +84,6 @@ export class QuestionAgent {
       }
     }
 
-    return toQuestion(FALLBACK_QUESTIONS[allowed[0]], number, 'fallback');
+    return toQuestion(await localizeQuestion(FALLBACK_QUESTIONS[allowed[0]], language, this.translator), number, 'fallback');
   }
 }

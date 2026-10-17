@@ -6,7 +6,8 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { App } from '../../client/src/App';
 import { ApiError, createApi, type Api } from '../../client/src/api';
-import { AI_NARRATIVE, buildTestApp, scriptedLlm } from '../helpers.js';
+import { I18nProvider } from '../../client/src/i18n';
+import { AI_NARRATIVE, buildTestApp, fakeTranslate, scriptedLlm } from '../helpers.js';
 import { toQuestion } from '../../server/agent/questionAgent.js';
 import { FALLBACK_QUESTIONS } from '../../server/agent/fallbackBank.js';
 import { buildProgress } from '../../shared/game.js';
@@ -65,6 +66,29 @@ describe('resident journey (React UI ↔ Express API ↔ AI agent)', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Find your future in Wigan' })).toBeInTheDocument();
   });
 
+  it('lets the resident switch the whole form into a language they type', async () => {
+    const user = userEvent.setup();
+    render(
+      <I18nProvider>
+        <App api={createApi(base)} />
+      </I18nProvider>,
+    );
+
+    await user.type(screen.getByLabelText(/Language/), 'Polnisch');
+    await user.click(screen.getByRole('button', { name: 'Translate' }));
+    const letsGo = fakeTranslate('Let’s go');
+    expect(await screen.findByRole('button', { name: new RegExp(letsGo) })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(fakeTranslate('Find your future in Wigan'));
+    expect(document.documentElement.lang).toBe('pl');
+
+    await user.click(screen.getByRole('button', { name: new RegExp(letsGo) }));
+    await waitFor(() => expect(hudCount()).toBe(fakeTranslate('Question 1 of 8')));
+    expect(screen.getByText(fakeTranslate('Your matches'))).toBeInTheDocument();
+
+    localStorage.clear();
+    document.documentElement.lang = 'en-GB';
+  });
+
   it('shows a friendly error with a retry when the server is unreachable', async () => {
     const user = userEvent.setup();
     render(<App api={createApi('http://127.0.0.1:9')} />);
@@ -78,6 +102,7 @@ describe('resident journey (React UI ↔ Express API ↔ AI agent)', () => {
     const user = userEvent.setup();
     const question = toQuestion(FALLBACK_QUESTIONS.age, 1, 'ai');
     const api: Api = {
+      translate: vi.fn(),
       start: vi.fn(async () => ({ sessionId: 's', question, progress: buildProgress([], 8, false) })),
       answer: vi.fn(async () => Promise.reject(new ApiError(404, 'Session not found or expired. Please start again.'))),
       result: vi.fn(),

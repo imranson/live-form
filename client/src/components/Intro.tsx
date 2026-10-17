@@ -1,35 +1,48 @@
 import type { CSSProperties } from 'react';
 import { SECTORS } from '../../../shared/sectors.js';
+import { useI18n } from '../i18n';
+import { LanguagePicker } from './LanguagePicker';
 
-export function Intro({ onStart, questionCount = 8 }: { onStart: () => void; questionCount?: number }) {
+export function Intro({
+  onStart,
+  onTranslate,
+  questionCount = 8,
+}: {
+  onStart: () => void;
+  onTranslate?: (language: string) => Promise<void>;
+  questionCount?: number;
+}) {
+  const { t, sector } = useI18n();
   return (
     <section className="card intro" aria-labelledby="intro-title">
-      <h1 id="intro-title">Find your future in Wigan</h1>
-      <p className="lede">Answer {questionCount} quick questions. See which local jobs suit you and where to get help.</p>
+      <h1 id="intro-title">{t('intro.title')}</h1>
+      <p className="lede">{t('intro.lede', { count: questionCount })}</p>
 
       <ul className="intro__perks">
         <li>
-          <span aria-hidden="true">⏱️</span> 3 minutes
+          <span aria-hidden="true">⏱️</span> {t('intro.perkTime')}
         </li>
         <li>
-          <span aria-hidden="true">🏅</span> Earn badges
+          <span aria-hidden="true">🏅</span> {t('intro.perkBadges')}
         </li>
         <li>
-          <span aria-hidden="true">🔒</span> No sign-up
+          <span aria-hidden="true">🔒</span> {t('intro.perkPrivacy')}
         </li>
       </ul>
 
-      <h2 className="intro__subhead">Wigan needs people in</h2>
-      <ul className="sector-chips" aria-label="In-demand sectors">
+      <h2 className="intro__subhead">{t('intro.sectorsHeading')}</h2>
+      <ul className="sector-chips" aria-label={t('intro.sectorsLabel')}>
         {SECTORS.map((s) => (
           <li key={s.id} className="sector-chip" style={{ '--chip': s.color } as CSSProperties}>
-            <span aria-hidden="true">{s.emoji}</span> {s.name}
+            <span aria-hidden="true">{s.emoji}</span> {sector(s.id).name}
           </li>
         ))}
       </ul>
 
+      {onTranslate && <LanguagePicker onTranslate={onTranslate} />}
+
       <button type="button" className="btn btn--primary btn--xl" onClick={onStart}>
-        Let’s go <span aria-hidden="true">→</span>
+        {t('intro.start')} <span className="arrow" aria-hidden="true">→</span>
       </button>
     </section>
   );

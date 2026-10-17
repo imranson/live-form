@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
+import type { UiKey } from '../../../shared/i18n.js';
+import { useI18n } from '../i18n';
 
 export type ThinkingKind = 'start' | 'next' | 'result';
 
-const STEPS: Record<ThinkingKind, string[]> = {
-  start: ['Getting ready…', 'Checking local jobs…', 'Writing your first question…'],
-  next: ['Saving your answer…', 'Updating your matches…', 'Writing the next question…'],
-  result: ['Adding up your answers…', 'Finding help near you…', 'Writing your results…'],
+const STEPS: Record<ThinkingKind, UiKey[]> = {
+  start: ['thinking.start1', 'thinking.start2', 'thinking.start3'],
+  next: ['thinking.next1', 'thinking.next2', 'thinking.next3'],
+  result: ['thinking.result1', 'thinking.result2', 'thinking.result3'],
 };
 
 export function AgentThinking({ kind }: { kind: ThinkingKind }) {
+  const { t } = useI18n();
   const [step, setStep] = useState(0);
   useEffect(() => {
     setStep(0);
@@ -24,7 +27,7 @@ export function AgentThinking({ kind }: { kind: ThinkingKind }) {
         <span />
       </div>
       <p className="thinking__text" role="status" aria-live="polite">
-        {STEPS[kind][step]}
+        {t(STEPS[kind][step])}
       </p>
       <div className="skeleton" aria-hidden="true">
         <div className="skeleton__line skeleton__line--title" />

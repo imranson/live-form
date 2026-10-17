@@ -1,7 +1,8 @@
 import { SECTORS, getSector } from '../../shared/sectors.js';
 import { PROFILE_TAGS, TOPICS, type ProfileTag, type TopicId } from '../../shared/profile.js';
 import { selectedLabels } from '../../shared/scoring.js';
-import type { AnswerRecord, SectorScore, Signpost } from '../../shared/types.js';
+import { ENGLISH, isEnglish } from '../../shared/i18n.js';
+import type { AnswerRecord, Language, SectorScore, Signpost } from '../../shared/types.js';
 import type { ChatMessage } from '../ollama.js';
 
 const sectorList = SECTORS.map((s) => `- ${s.id}: ${s.name} — e.g. ${s.roles.map((r) => r.title).join('; ')}`).join('\n');
@@ -24,7 +25,7 @@ TOPICS (the "topic" field must be one of the allowed topics in the user message)
 ${topicList}
 
 HOW TO WRITE A GREAT QUESTION
-- Plain, friendly British English (reading age 9–11). Warm and encouraging with a light touch of Wigan pride – no forced slang or stereotypes.
+- Plain, friendly British English, or the language named in the user message (reading age 9–11). Warm and encouraging with a light touch of Wigan pride – no forced slang or stereotypes.
 - Title: max ~12 words, reads naturally as a question. Optional "helper": max ~20 words.
 - 3 to 6 options. Each label max ~8 words. Put one fitting emoji in "emoji" (never inside the label).
 - Options are everyday things people recognise – not job titles. We are discovering, not asking them to pick a job.
@@ -47,6 +48,13 @@ export interface QuestionContext {
   allowed: readonly TopicId[];
   scores: readonly SectorScore[];
   tags: readonly ProfileTag[];
+  language?: Language;
+}
+
+/** Only added for other languages, so English prompts stay exactly as they were. */
+function languageLines(language: Language, fields: string): string[] {
+  if (isEnglish(language)) return [];
+  return [`Language: write ${fields} in ${language.name} (${language.code}). Keep JSON keys, ids and tags exactly as listed, in English.`, ''];
 }
 
 function describeAnswers(answers: readonly AnswerRecord[]): string {
@@ -77,6 +85,7 @@ export function buildQuestionMessages(ctx: QuestionContext): ChatMessage[] {
     `Sectors not explored yet: ${unexplored.length ? unexplored.join(', ') : 'none – sharpen the top matches'}`,
     `Known profile tags: ${ctx.tags.length ? ctx.tags.join(', ') : 'none'}`,
     '',
+    ...languageLines(ctx.language ?? ENGLISH, 'the title, helper, agentNote and every option label'),
     'Write the next question now as a single JSON object.',
   ].join('\n');
 
@@ -89,7 +98,7 @@ export function buildQuestionMessages(ctx: QuestionContext): ChatMessage[] {
 export const NARRATIVE_SYSTEM_PROMPT = `You are the Wigan Careers Guide for Wigan Council. A member of the public has just finished a short careers questionnaire. Write their personalised results.
 
 Rules:
-- Second person ("you"), warm, encouraging, plain British English (reading age 9–11).
+- Second person ("you"), warm, encouraging, plain British English or the language named in the user message (reading age 9–11).
 - Connect what they told you to their top matched sectors. These are jobs Wigan employers find hard to fill, so there is real opportunity – but never promise a job.
 - Never invent statistics, pay, employer names, phone numbers or web addresses.
 - "nextSteps": 3 short, practical actions. Each must name one of the provided signposts by its exact title.
@@ -103,6 +112,7 @@ export function buildNarrativeMessages(
   top: readonly SectorScore[],
   tags: readonly ProfileTag[],
   signposts: readonly Signpost[],
+  language: Language = ENGLISH,
 ): ChatMessage[] {
   const user = [
     'Their answers:',
@@ -118,7 +128,11 @@ export function buildNarrativeMessages(
     '',
     'Signposts (use these exact titles in nextSteps):',
     ...signposts.map((s) => `- ${s.resource.title}: ${s.resource.description}`),
-  ].join('\n');
+    '',
+    ...languageLines(language, 'the headline, summary, strengths and nextSteps'),
+  ]
+    .join('\n')
+    .trimEnd();
 
   return [
     { role: 'system', content: NARRATIVE_SYSTEM_PROMPT },

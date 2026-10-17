@@ -1,8 +1,11 @@
+import { useI18n } from '../i18n';
+
 export function Header() {
+  const { t } = useI18n();
   return (
     <header className="site-header">
       <div className="site-header__inner">
-        <a className="brand" href="https://www.wigan.gov.uk/" aria-label="Wigan Council home">
+        <a className="brand" href="https://www.wigan.gov.uk/" aria-label={t('header.home')}>
           <svg className="brand__mark" viewBox="0 0 32 32" aria-hidden="true">
             <rect width="32" height="32" rx="7" fill="currentColor" />
             <path d="M7 10l3.2 12 3-8.5 2.8 8.5L19.2 10" stroke="#97be10" strokeWidth="3" fill="none" strokeLinejoin="round" strokeLinecap="round" />
@@ -12,17 +15,18 @@ export function Header() {
             Wigan <strong>Council</strong>
           </span>
         </a>
-        <span className="site-header__service">Jobs &amp; Skills</span>
-        <span className="pill pill--proto">Prototype</span>
+        <span className="site-header__service">{t('header.service')}</span>
+        <span className="pill pill--proto">{t('header.prototype')}</span>
       </div>
     </header>
   );
 }
 
 export function Footer() {
+  const { t } = useI18n();
   return (
     <footer className="site-footer">
-      <p>We don’t ask for your name. Answers are deleted after 1 hour. Questions are written by AI; links go to trusted services.</p>
+      <p>{t('footer.text')}</p>
     </footer>
   );
 }

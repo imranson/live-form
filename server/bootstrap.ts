@@ -3,6 +3,7 @@ import { readConfig } from './config.js';
 import { OllamaClient } from './ollama.js';
 import { QuestionAgent } from './agent/questionAgent.js';
 import { ResultAgent } from './agent/resultAgent.js';
+import { Translator } from './i18n/translator.js';
 import { SessionStore } from './sessions.js';
 import { createApp } from './app.js';
 
@@ -12,10 +13,13 @@ export function bootstrap(config = readConfig()): express.Express {
   if (llm && !config.ollama.apiKey) console.warn('OLLAMA_API_KEY is not set: ollama.com will reject requests and every question will come from the fallback bank.');
   const store = new SessionStore(config.sessionTtlMs);
   setInterval(() => store.prune(), 60_000).unref();
+  // One shared translator so every request reuses the same per-language cache.
+  const translator = new Translator(llm);
 
   return createApp({
-    questionAgent: new QuestionAgent(llm),
-    resultAgent: new ResultAgent(llm),
+    questionAgent: new QuestionAgent(llm, console, translator),
+    resultAgent: new ResultAgent(llm, console, translator),
+    translator,
     store,
     questionCount: config.questionCount,
     aiInfo: { mode: llm ? 'ollama-cloud' : 'offline', models: llm ? config.ollama.models : [] },
